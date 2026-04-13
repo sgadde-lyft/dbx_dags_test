@@ -1,11 +1,14 @@
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.providers.databricks.operators.databricks_sql import DatabricksStatementQueryOperator
+from airflow.providers.databricks.operators.databricks_sql import DatabricksSqlOperator
+
+# SQL warehouse HTTP path (same as in the Databricks workspace URL).
+SQL_WAREHOUSE_HTTP_PATH = "/sql/1.0/warehouses/5e6e1e71664decbd"
 
 SQL = """
 SELECT count(*) 
-FROM catalog.schema.table
+FROM dev_catalog.staging.dim_airports
 """
 
 default_args = {
@@ -23,20 +26,16 @@ with DAG(
     tags=["databricks", "sql"],
 ) as dag:
 
-    read_sql = DatabricksStatementQueryOperator(
+    read_sql = DatabricksSqlOperator(
         task_id="read_sql",
-        databricks_conn_id="databricks_default",  # Airflow Connection
-        warehouse_id="<your-warehouse-id>",        # SQL Warehouse ID
-        catalog="catalog",
-        schema="schema",
-        statement=SQL,
+        databricks_conn_id="databricks_default",
+        http_path=SQL_WAREHOUSE_HTTP_PATH,
+        catalog="dev_catalog",
+        schema="staging",
+        sql=SQL
     )
 
 
- 
-## 1. create a databricks connection in airflow 
-## (Conn Id: databricks_default, Host: https://adb-, Token: your PAT or service-principal token)
-## 2. create a sql warehouse in databricks
-## (Warehouse Id: <your-warehouse-id>)
-## trigger command -
-## airflow dags trigger databricks_sql_read
+# Airflow connection `databricks_default`: workspace host + auth (e.g. SP OAuth in extras).
+# `http_path` above targets this DAG’s warehouse; you can omit it if the same path is set on the connection.
+# Trigger: airflow dags trigger databricks_sql_read

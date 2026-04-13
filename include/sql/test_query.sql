@@ -1,1 +1,1 @@
-SELECT * FROM catalog.schema.table
+SELECT * FROM dev_catalog.staging.dim_airports
